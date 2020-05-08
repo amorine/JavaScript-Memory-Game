@@ -1,0 +1,276 @@
+<html>
+<head>
+	<title>Memory Game</title>
+</head>
+<body>
+	<div id='titleArea'></div>
+	<hr>
+	<div id='gameArea'></div>
+	<div id='buttonArea'></div>
+	
+	<script>
+	
+		//CONSTANTS
+		SIZE = 52;
+		PAIR = 2;
+		SUITS = new Array('Spade', 'Heart', 'Diamond', 'Club');
+		CARDRANKS = new Array('Ace',2,3,4,5,6,7,8,9,10,'Jack','Queen','King');
+		CARDROWS = 4;
+		CARDSCOLUMNS = 13;
+		CARDSINSUIT = 13;
+		CARDBACK = "back.gif";
+
+		//VARIABLES
+		var preloadImageArr = new Array(),
+			cardSetArr = new Array(),
+			guessCards = new Array(),
+			pairedCards = new Array();
+		var setGameRef = '',
+			setGameHTML = '',
+			setButtonRef = '',
+			setButtonHTML = '',
+			countDownRef = '',
+			showCardRef = '',
+			selectCardRef = '',
+			flipCardRef = '',
+			message = '';
+		
+		var i = 0, 
+			j = 0,
+			rTime = 0,
+			arrSize = 0,
+			randomIndex = 0,
+			tempIndex = 0;
+		var sorted = false;
+		
+		
+		// STATEMENTS
+		setGame();
+		playGame();
+		
+		
+		// FUNCTIONS
+		/**
+		* This function sets up the environment for the game
+		*
+		*/
+		function setGame() {
+			// Display the cards in a table
+			setGameRef = document.getElementById('gameArea');
+			setGameHTML = '<table align="center" border="1">';
+			for (i=0; i<CARDROWS; i++) {
+				setGameHTML += '<tr>';
+					for (j=0; j<CARDSCOLUMNS; j++) {
+						setGameHTML += '<td>';
+						setGameHTML += '<img id=' + (j+i*CARDSCOLUMNS) + ' src=CARDBACK height="94px"';
+						setGameHTML += 'width="75px" onclick="selectCard('+(j+i*CARDSCOLUMNS)+')";">';
+						setGameHTML += '</td>';
+					}
+				setGameHTML += '</tr>';
+			}
+			setGameHTML += '</table>';
+			setGameHTML += '<br/>';
+			setGameRef.innerHTML = setGameHTML;
+			// Display the buttons
+			setButtonRef = document.getElementById('buttonArea');
+			setButtonHTML = '<div align="center">';
+			// Call the appropriate function when the button is clicked
+			setButtonHTML += '<input type="button" id="stopGame" onclick="stopGame()" value="Stop Game">';
+			setButtonHTML += '<input type="button" id="flipCards" onclick="flipCard(0)" value="Flip Cards">';
+			setButtonHTML += '<input type="button" id="showCards" onclick="showCard(0)" value="Show Cards">';
+			setButtonHTML += '</div>';
+			setButtonRef.innerHTML = setButtonHTML;
+		}
+	
+		/**
+		* This function turns all cards face-up one-by-one
+		*
+		* @param	This operand is the card image ID
+		*
+		*/
+		function showCard(cardID) {
+			if (cardID<SIZE) {
+				// Get the element to be changed and change it
+				showCardRef = document.getElementById(cardID);
+				showCardRef.src = preloadImageArr[cardSetArr[cardID]].src;
+				cardID++;
+				// Animate the show card process with a delay
+				setTimeout('showCard(' + cardID + ')',10);
+			}
+		}
+		
+		/**
+		* This function turns all cards face-down one-by-one
+		*
+		* @param	This operand is the card image ID
+		*
+		*/
+		function flipCard(cardID) {
+			// Get the element to be changed and change it
+			flipCardRef = document.getElementById(cardID);
+			if (cardID<SIZE && !isPairedCard(cardID)) {
+				flipCardRef.src = CARDBACK;
+			}
+			cardID++;
+			// Animate the show card process with a delay
+			setTimeout('flipCard(' + cardID + ')', 10);
+		}
+		
+		/**
+		* This function checks if a card exists in the pairedCards array
+		*
+		* @param	This operand is the card ID
+		* @return	Boolean result if the card ID is in the array
+		* 
+		*/
+		function isPairedCard(cCard) {
+			for (i=0; i<pairedCards.length; i++) {
+				// Check if cCard is in the pairedCards array
+				if (pairedCards[i] == cCard) {
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		/**
+		* This function sorts an array based on its rank
+		* 
+		* @param	This operand is an array
+		*
+		*/
+		function sortCards(arr) {
+			for (i=0; i<arr.length-1 && !sorted; i++) {
+				sorted = true;
+				for (j=0; j<arr.length-1; j++) {
+					// Compare with rank in cardSetArr
+					if (cardSetArr[arr[j]]%CARDSINSUIT > cardSetArr[arr[j+1]]%CARDSINSUIT) {
+						temp = arr[j];
+						arr[j] = arr[j+1];
+						arr[j+1] = temp;
+						sorted = false;
+					}
+				}
+			}
+		} 
+		
+		/**
+		* This function starts a new gaming session
+		*
+		*/
+		function playGame() {
+			//Preload card images
+			for (i=0; i<SIZE; i++) {
+				preloadImageArr[i] = new Image();
+				preloadImageArr[i].src =  i + '.png';
+			}
+			//Initialise cardSetArr
+			for (i=0; i<SIZE; i++) {
+				cardSetArr[i] = i;
+			}
+			//Instantiate a new instance for pairedCards and guessCards
+			guessCards = new Array();
+			pairedCards = new Array();
+			shuffleCards(cardSetArr);
+			flipCard(0);
+			resetTimer(60);
+		}
+
+		/**
+		* This function displays a countdown timer in the heading
+		*
+		* @param	This operand is a number value (in seconds)
+		*
+		*/
+		function resetTimer(sec) {
+			// Get the element to be changed
+			countDownRef = document.getElementById('titleArea');
+			countDownRef.innerHTML = '<h1 align="middle">Memory Game (Time left: ' + sec + ' seconds)</h1>';
+			sec--;
+			if (sec >= 0) {
+				// Animate the change of the element 
+				rTime = setTimeout('resetTimer(' + sec + ')',1000);
+			} else {
+				// Stop the game when the timer reaches the end
+				stopGame();
+			}
+		}
+		
+		/**
+		* This function stops the current game, displays the results and 
+		* prepares for a new gaming session
+		*
+		*/
+		function stopGame() {
+			// Clear the resetTimer
+			clearTimeout(rTime);
+			sortCards(pairedCards);
+			// Present game statistics to the user
+			message = 'You have found ' + pairedCards.length/PAIR + ' pairs: ' + '\n\n';
+			for (i=0; i<pairedCards.length; i++) {
+				message += SUITS[Math.floor(cardSetArr[pairedCards[i]]/CARDSINSUIT)] + '-'; 
+				message += CARDRANKS[cardSetArr[pairedCards[i]]%CARDSINSUIT];
+				i++;
+				message += ' -- ' + SUITS[Math.floor(cardSetArr[pairedCards[i]]/CARDSINSUIT)] + '-';
+				message += CARDRANKS[cardSetArr[pairedCards[i]]%CARDSINSUIT] + '\n';
+			}
+			alert(message);
+			// Start a new game
+			playGame();
+		}
+		
+		/**
+		* This function randomises the order of elements within an array
+		*
+		* @param	This operand is an array
+		*
+		*/
+		function shuffleCards(arr) {
+			arrSize = arr.length;
+			randomIndex = 0;
+			tempIndex = 0;
+			while (arrSize>1) {
+				// Randomly choose an index
+				randomIndex = Math.floor(Math.random() * arrSize);
+				tempIndex = arr[arrSize - 1];
+				arr[arrSize - 1] = arr[randomIndex];
+				arr[randomIndex] = tempIndex;
+				arrSize--;
+			}
+		}
+		
+		/**
+		* This function turns a selected card face-up, compares two clicked
+		* cards and flips it back down if they're not a match
+		*
+		* @param	This operand is the card ID
+		*
+		*/
+		function selectCard(cardNumber) {
+			if (!isPairedCard(cardNumber)) {
+				// Turn the card face-up it isn't already paired
+				selectCardRef = document.getElementById(cardNumber);
+				selectCardRef.src = preloadImageArr[cardSetArr[cardNumber]].src;
+				if (guessCards.length === 0 || cardNumber != guessCards[0]) {
+					guessCards.push(cardNumber);
+				}
+				if (guessCards.length === PAIR) {
+					if (cardSetArr[guessCards[0]]%CARDSINSUIT === cardSetArr[guessCards[1]]%CARDSINSUIT) {
+						// If the guess cards are the same rank, add them to the pairedCards array
+						pairedCards.push(guessCards[0]);
+						pairedCards.push(guessCards[1]);
+					} else {
+						// If not, turn the cards face-down
+						setTimeout('document.getElementById(' + guessCards[0] + ').src = CARDBACK', 300);
+						setTimeout('document.getElementById(' + guessCards[1] + ').src = CARDBACK', 300);
+						
+					}
+					// Reset guessCards array
+					guessCards = new Array();
+				}
+			}
+		}
+	
+	</script>
+</body>
+</html>
